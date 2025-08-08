@@ -268,9 +268,11 @@ const FeaturedWorks = () => {
                 >
                   <XIcon size={32} />
                 </button>
-                <img
+                <Image
                   src={selectedImage.src}
                   alt={selectedImage.title}
+                  width={800}
+                  height={600}
                   className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg"
                 />
                 <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white p-4 rounded-lg">

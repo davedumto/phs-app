@@ -4,29 +4,39 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useCallback,
 } from "react";
 import { gsap } from "gsap";
 import { motion, AnimatePresence } from "framer-motion";
 import { XIcon } from "lucide-react";
+import Image from "next/image";
 
 const useMedia = (
   queries: string[],
   values: number[],
   defaultValue: number
 ): number => {
-  const get = () =>
-    values[queries.findIndex((q) => matchMedia(q).matches)] ?? defaultValue;
-
-  const [value, setValue] = useState<number>(get);
+  const [value, setValue] = useState<number>(defaultValue);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === "undefined") return;
+
+    const get = () =>
+      values[queries.findIndex((q) => window.matchMedia(q).matches)] ??
+      defaultValue;
+
+    setValue(get());
+
     const handler = () => setValue(get);
-    queries.forEach((q) => matchMedia(q).addEventListener("change", handler));
+    queries.forEach((q) =>
+      window.matchMedia(q).addEventListener("change", handler)
+    );
     return () =>
       queries.forEach((q) =>
-        matchMedia(q).removeEventListener("change", handler)
+        window.matchMedia(q).removeEventListener("change", handler)
       );
-  }, [queries]);
+  }, [queries, values, defaultValue]);
 
   return value;
 };
@@ -53,7 +63,7 @@ const preloadImages = async (urls: string[]): Promise<void> => {
     urls.map(
       (src) =>
         new Promise<void>((resolve) => {
-          const img = new Image();
+          const img = new window.Image();
           img.src = src;
           img.onload = img.onerror = () => resolve();
         })
@@ -119,36 +129,39 @@ const Masonry: React.FC<MasonryProps> = ({
   const [containerRef, { width }] = useMeasure<HTMLDivElement>();
   const [imagesReady, setImagesReady] = useState(false);
 
-  const getInitialPosition = (item: GridItem) => {
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    if (!containerRect) return { x: item.x, y: item.y };
+  const getInitialPosition = useCallback(
+    (item: GridItem) => {
+      const containerRect = containerRef.current?.getBoundingClientRect();
+      if (!containerRect) return { x: item.x, y: item.y };
 
-    let direction = animateFrom;
-    if (animateFrom === "random") {
-      const dirs = ["top", "bottom", "left", "right"];
-      direction = dirs[
-        Math.floor(Math.random() * dirs.length)
-      ] as typeof animateFrom;
-    }
+      let direction = animateFrom;
+      if (animateFrom === "random") {
+        const dirs = ["top", "bottom", "left", "right"];
+        direction = dirs[
+          Math.floor(Math.random() * dirs.length)
+        ] as typeof animateFrom;
+      }
 
-    switch (direction) {
-      case "top":
-        return { x: item.x, y: -200 };
-      case "bottom":
-        return { x: item.x, y: window.innerHeight + 200 };
-      case "left":
-        return { x: -200, y: item.y };
-      case "right":
-        return { x: window.innerWidth + 200, y: item.y };
-      case "center":
-        return {
-          x: containerRect.width / 2 - item.w / 2,
-          y: containerRect.height / 2 - item.h / 2,
-        };
-      default:
-        return { x: item.x, y: item.y + 100 };
-    }
-  };
+      switch (direction) {
+        case "top":
+          return { x: item.x, y: -200 };
+        case "bottom":
+          return { x: item.x, y: window.innerHeight + 200 };
+        case "left":
+          return { x: -200, y: item.y };
+        case "right":
+          return { x: window.innerWidth + 200, y: item.y };
+        case "center":
+          return {
+            x: containerRect.width / 2 - item.w / 2,
+            y: containerRect.height / 2 - item.h / 2,
+          };
+        default:
+          return { x: item.x, y: item.y + 100 };
+      }
+    },
+    [animateFrom, containerRef]
+  );
 
   useEffect(() => {
     preloadImages(items.map((i) => i.img)).then(() => setImagesReady(true));
@@ -220,7 +233,16 @@ const Masonry: React.FC<MasonryProps> = ({
     });
 
     hasMounted.current = true;
-  }, [grid, imagesReady, stagger, animateFrom, blurToFocus, duration, ease]);
+  }, [
+    grid,
+    imagesReady,
+    stagger,
+    animateFrom,
+    blurToFocus,
+    duration,
+    ease,
+    getInitialPosition,
+  ]);
 
   const handleMouseEnter = (id: string, element: HTMLElement) => {
     if (scaleOnHover) {
@@ -313,9 +335,11 @@ const Masonry: React.FC<MasonryProps> = ({
               >
                 <XIcon size={32} />
               </button>
-              <img
+              <Image
                 src={selectedImage.src}
                 alt={selectedImage.title}
+                width={800}
+                height={600}
                 className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg"
               />
               <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white p-4 rounded-lg">

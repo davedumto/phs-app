@@ -2,6 +2,7 @@
 import React from "react";
 import { ArrowRightIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 const HeroSection = () => {
   return (
@@ -59,9 +60,11 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
         >
           <div className="relative">
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2400&q=80"
               alt="Elegant interior design"
+              width={800}
+              height={600}
               className="rounded-lg shadow-xl w-full h-auto object-cover"
             />
             <motion.div
